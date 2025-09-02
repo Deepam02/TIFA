@@ -50,7 +50,7 @@ class AIAnalyzer:
     
     def assess_severity(self, threat_item: ThreatIntelItem) -> str:
         """Assess threat severity using AI"""
-        content = threat_item.title + " " + threat_item.description
+        content = threat_item.title + " " + threat_item.summary
         
         if self.analyzer and hasattr(self.analyzer, 'assess_threat_severity'):
             try:
@@ -66,8 +66,8 @@ class AIAnalyzer:
         ioc_count = sum(len(iocs) for iocs in threat_item.iocs.values())
         ioc_types = [ioc_type.replace('_', ' ').title() for ioc_type, iocs in threat_item.iocs.items() if iocs]
         
-        severity = self._fallback_severity_assessment(threat_item.title + " " + threat_item.description)
-        threat_type = self._identify_threat_type(threat_item.title + " " + threat_item.description)
+        severity = self._fallback_severity_assessment(threat_item.title + " " + threat_item.summary)
+        threat_type = self._identify_threat_type(threat_item.title + " " + threat_item.summary)
         
         return f"""
 🎯 THREAT CLASSIFICATION
@@ -77,7 +77,7 @@ Confidence: Medium (Auto-classified)
 
 🔍 KEY FINDINGS
 • Threat intelligence from {threat_item.source}
-• Published: {threat_item.published}
+• Published: {threat_item.published_date}
 • Contains {ioc_count} potential indicators of compromise
 
 ⚠️ IMPACT ASSESSMENT
