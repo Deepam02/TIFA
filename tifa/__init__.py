@@ -1,5 +1,5 @@
 """
-🛡️ TIFA - Threat Intelligence Feed Aggregator
+TIFA - Threat Intelligence Feed Aggregator
 Enterprise-grade threat intelligence platform with AI-powered analysis.
 """
 

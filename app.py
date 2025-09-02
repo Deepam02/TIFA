@@ -1,5 +1,5 @@
 """
-🛡️ TIFA - Elite Threat Intelligence Feed Aggregator
+TIFA - Elite Threat Intelligence Feed Aggregator
 World-Class Enterprise Dashboard for International Hackathon Competition
 Advanced AI-Powered Real-Time Threat Intelligence Platform
 """
@@ -698,7 +698,7 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
             st.info("⚙️ Alert configuration panel coming soon...")
     
     # Main threat feed display
-    st.markdown("## 🎯 Live Threat Intelligence Feed")
+    
     
     # === LIVE THREAT INTELLIGENCE DISPLAY ===
     st.subheader("🎯 **LIVE THREAT INTELLIGENCE FEED**")
@@ -1586,7 +1586,7 @@ def render_elite_analytics(aggregator: EliteThreatIntelAggregator):
                 ioc_data = df[df['ioc_count'].notna() & (df['ioc_count'] >= 0)]
                 
                 if len(ioc_data) > 0:
-                    fig = px.histogram(ioc_data, x='ioc_count', bins=min(20, len(ioc_data)),
+                    fig = px.histogram(ioc_data, x='ioc_count', nbins=min(20, len(ioc_data)),
                                      title="IOC Count Distribution per Threat")
                     st.plotly_chart(fig, width="stretch", key="ioc_count_histogram")
                 else:
@@ -1673,7 +1673,6 @@ def main():
         📊 Enterprise analytics  
         🚨 Intelligent alerting  
         
-        Built for hackathon excellence! 🏆
         """)
     
     # Main content routing
