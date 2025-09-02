@@ -11,8 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 import json
 import re
-from config import Config
-from models import ThreatIntelItem
+from ..core.config import Config
+from ..core.models import ThreatIntelItem
 
 @dataclass
 class APIKeyStats:

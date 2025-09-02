@@ -31,6 +31,9 @@ class Config:
     # Filter out None values
     GEMINI_API_KEYS = [key for key in GEMINI_API_KEYS if key]
     
+    # AI Provider Configuration
+    AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")
+    
     # Advanced AI Model Options for Different Tasks
     GEMINI_MODELS = {
         "summary": "gemini-2.5-flash",      # Latest and fastest for summaries

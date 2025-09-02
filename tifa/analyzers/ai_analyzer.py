@@ -4,13 +4,13 @@ AI Analysis module for threat intelligence with Gemini integration
 
 import logging
 from typing import Dict, List
-from models import ThreatIntelItem
-from config import Config
+from ..core.models import ThreatIntelItem
+from ..core.config import Config
 
 # Import based on configuration
 try:
     if Config.AI_PROVIDER == "gemini":
-        from gemini_analyzer import GeminiAIAnalyzer
+        from .gemini_analyzer import GeminiAIAnalyzer
         AI_AVAILABLE = True
     else:
         AI_AVAILABLE = False

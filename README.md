@@ -86,17 +86,28 @@ If you want to run your own instance or contribute to the project:
 
 ```
 TIFA/
-├── 📄 app.py                 # Main Streamlit application
-├── 📄 core.py                # Core business logic & AI integration
-├── 📄 database.py            # Database operations & caching
-├── 📄 models.py              # Data models & schemas
-├── 📄 config.py              # Configuration settings
-├── 📄 init_database.py       # Database initialization
-├── 📄 streamlit_app.py       # Streamlit entry point
-├── 📄 requirements.txt       # Python dependencies
-├── 📄 README.md              # This file
-└── 📁 .streamlit/            # Streamlit configuration
-    └── secrets.toml          # API keys & secrets
+├── 📄 app.py                    # Main Streamlit application
+├── 📄 streamlit_app.py          # Cloud deployment entry point
+├── 📄 core.py                   # Core business logic & AI integration
+├── 📄 database.py               # Database operations & caching
+├── 📄 models.py                 # Data models & schemas
+├── 📄 config.py                 # Configuration settings
+├── 📄 aggregator.py             # Threat intelligence aggregation
+├── 📄 ai_analyzer.py            # AI analysis framework
+├── 📄 gemini_analyzer.py        # Google Gemini integration
+├── 📄 feed_collector.py         # RSS/Atom feed collection
+├── 📄 ioc_extractor.py          # IOC pattern extraction
+├── 📄 alert_system.py           # Alerting and notifications
+├── 📄 requirements.txt          # Python dependencies
+├── 📄 README.md                 # This file
+├── 📁 .streamlit/               # Streamlit configuration
+│   ├── config.toml              # UI configuration
+│   └── secrets.toml             # API keys & secrets
+└── 📁 src/
+    └── utils/                   # Utility scripts
+        ├── init_database.py     # Database initialization
+        ├── migrate_db.py        # Database migration
+        └── fix_schema.py        # Schema fixes
 ```
 
 ## 🤖 AI Integration

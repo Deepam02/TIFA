@@ -6,12 +6,12 @@ import json
 from datetime import datetime
 from typing import List, Dict
 import logging
-from models import ThreatIntelItem
-from database import ThreatIntelDatabase
-from ioc_extractor import IOCExtractor
-from feed_collector import FeedCollector
-from ai_analyzer import AIAnalyzer
-from config import Config
+from .models import ThreatIntelItem
+from ..database.manager import ThreatIntelDatabase
+from ..analyzers.ioc_extractor import IOCExtractor
+from ..collectors.feed_collector import FeedCollector
+from ..analyzers.ai_analyzer import AIAnalyzer
+from .config import Config
 
 logger = logging.getLogger(__name__)
 

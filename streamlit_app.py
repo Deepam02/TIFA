@@ -34,16 +34,9 @@ if hasattr(st, 'secrets'):
 
 # Import and run the application
 try:
-    # Try optimized version first, fallback to main app
-    try:
-        from app_optimized import main as optimized_main
-        st.info("🚀 Running optimized fast-loading version")
-        optimized_main()
-    except ImportError:
-        # Fallback to main app
-        from app import main
-        st.info("🔄 Running standard version")
-        main()
+    from app import main
+    st.info("🚀 Running TIFA - Elite Threat Intelligence Platform")
+    main()
         
 except Exception as e:
     st.error(f"🚨 Application Error: {str(e)}")

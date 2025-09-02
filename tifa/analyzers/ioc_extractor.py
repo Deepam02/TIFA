@@ -5,7 +5,7 @@ IOC (Indicators of Compromise) extraction from text using regex patterns
 import re
 from typing import Dict, List
 import logging
-from config import Config
+from ..core.config import Config
 
 logger = logging.getLogger(__name__)
 

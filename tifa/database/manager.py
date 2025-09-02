@@ -6,8 +6,8 @@ import sqlite3
 import json
 import logging
 from typing import List, Dict, Any
-from models import ThreatIntelItem
-from config import Config
+from ..core.models import ThreatIntelItem
+from ..core.config import Config
 
 logger = logging.getLogger(__name__)
 

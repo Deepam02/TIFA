@@ -17,10 +17,15 @@ from typing import Dict, List, Any
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-from config import Config
-from models import ThreatIntelItem
-from database import ThreatIntelDatabase
-from core import AIAnalyzer, IOCExtractor, FeedCollector, ThreatCorrelator, AlertSystem
+from tifa.core.config import Config
+from tifa.core.models import ThreatIntelItem
+from tifa.database.manager import ThreatIntelDatabase
+from tifa.analyzers.ai_analyzer import AIAnalyzer
+from tifa.analyzers.ioc_extractor import IOCExtractor
+from tifa.analyzers.correlator import ThreatCorrelator
+from tifa.collectors.feed_collector import FeedCollector
+from tifa.core.aggregator import ThreatIntelAggregator
+from tifa.core.alerts import LiveAlertSystem
 
 # --- Setup & Configuration ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -152,7 +157,7 @@ class EliteThreatIntelAggregator:
             self.feed_collector = FeedCollector(self.db, self.ioc_extractor)
             self.ai_analyzer = AIAnalyzer()
             self.correlator = ThreatCorrelator(self.db)
-            self.alert_system = AlertSystem()
+            self.alert_system = LiveAlertSystem()
             
             # Performance metrics
             self.metrics = {

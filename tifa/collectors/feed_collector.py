@@ -8,10 +8,10 @@ from datetime import datetime
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
-from models import ThreatIntelItem
-from database import ThreatIntelDatabase
-from ioc_extractor import IOCExtractor
-from config import Config
+from ..core.models import ThreatIntelItem
+from ..database.manager import ThreatIntelDatabase
+from ..analyzers.ioc_extractor import IOCExtractor
+from ..core.config import Config
 
 logger = logging.getLogger(__name__)
 
