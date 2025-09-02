@@ -1,5 +1,5 @@
 """
-🛡️ TIFA - Elite Threat Intelligence Feed Aggregator
+TIFA - Elite Threat Intelligence Feed Aggregator
 Streamlit Cloud Entry Point with Performance Optimization
 """
 
@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Configure Streamlit page
 st.set_page_config(
-    page_title="🛡️ TIFA - Elite Threat Intelligence",
+    page_title="TIFA - Elite Threat Intelligence",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
