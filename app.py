@@ -450,33 +450,103 @@ def render_elite_metrics(aggregator: EliteThreatIntelAggregator):
         )
 
 def render_threat_card(item: ThreatIntelItem, is_new: bool = False, is_recent: bool = False):
-    """Render a threat card with optional NEW/RECENT badges."""
-    severity_class = getattr(item, 'severity', 'medium').lower()
+    """Render a threat card with optional NEW/RECENT badges using Streamlit components."""
+    import html
     
-    # Prepare badges
-    badge_html = ""
-    if is_new:
-        badge_html = '<span style="background: linear-gradient(45deg, #ff4757, #ff3742); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-right: 10px; animation: pulse 2s infinite;">🆕 BRAND NEW</span>'
-    elif is_recent:
-        badge_html = '<span style="background: linear-gradient(45deg, #ffa502, #ff6348); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-right: 10px;">🕐 RECENT</span>'
-    
-    # Enhanced threat card with badges
-    st.markdown(f"""
-    <div class="threat-card {severity_class}" style="{'border: 3px solid #ff4757; box-shadow: 0 0 15px rgba(255, 71, 87, 0.3);' if is_new else 'border: 2px solid #ffa502;' if is_recent else ''}">
-        {badge_html}
-        <h4>🎯 {item.title}</h4>
-        <div style="display: flex; justify-content: space-between; margin: 15px 0; flex-wrap: wrap;">
-            <span><strong>📡 Source:</strong> {item.source}</span>
-            <span><strong>📅 Published:</strong> {item.published_date.split('T')[0] if item.published_date else 'Unknown'}</span>
-            <span><strong>🔥 Severity:</strong> <span style="color: {'#e74c3c' if severity_class == 'critical' else '#f39c12' if severity_class == 'high' else '#3498db' if severity_class == 'medium' else '#27ae60'}; font-weight: bold;">{getattr(item, 'severity', 'Medium')}</span></span>
-            {f'<span><strong>⏰ Added:</strong> {getattr(item, "created_at", "Unknown")[:16].replace("T", " ")}</span>' if hasattr(item, 'created_at') and item.created_at else ''}
+    # Create a container for the threat card
+    with st.container():
+        # Add badge if needed
+        if is_new:
+            st.markdown("""
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <span style="background: linear-gradient(45deg, #ff4757, #ff3742); color: white; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block;">
+                        🆕 BRAND NEW
+                    </span>
+                </div>
+            """, unsafe_allow_html=True)
+        elif is_recent:
+            st.markdown("""
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <span style="background: linear-gradient(45deg, #ffa502, #ff6348); color: white; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block;">
+                        🕐 RECENT
+                    </span>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        # Safely escape HTML content
+        safe_title = html.escape(str(item.title))
+        safe_source = html.escape(str(item.source))
+        safe_summary = html.escape(str(item.summary))
+        
+        # Determine border color based on severity
+        severity = getattr(item, 'severity', 'Medium')
+        border_colors = {
+            'Critical': '#e74c3c',
+            'High': '#f39c12', 
+            'Medium': '#3498db',
+            'Low': '#27ae60'
+        }
+        border_color = border_colors.get(severity, '#3498db')
+        
+        # Special styling for new/recent threats
+        extra_style = ""
+        if is_new:
+            extra_style = "border: 3px solid #ff4757; box-shadow: 0 0 15px rgba(255, 71, 87, 0.3);"
+        elif is_recent:
+            extra_style = "border: 2px solid #ffa502; box-shadow: 0 0 10px rgba(255, 165, 2, 0.2);"
+        
+        # Get safe published date
+        pub_date = 'Unknown'
+        if item.published_date:
+            try:
+                pub_date = item.published_date.split('T')[0]
+            except:
+                pub_date = str(item.published_date)[:10]
+        
+        # Get safe created date
+        created_date_html = ""
+        if hasattr(item, 'created_at') and item.created_at:
+            try:
+                created_display = str(getattr(item, "created_at", "Unknown"))[:16].replace("T", " ")
+                created_date_html = f'<p style="margin: 5px 0; color: #2c3e50; font-weight: 600;">⏰ <strong>Added:</strong> {created_display}</p>'
+            except:
+                pass
+        
+        # Create the threat card using a styled container
+        st.markdown(f"""
+        <div style="
+            border-left: 5px solid {border_color};
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+            {extra_style}
+        ">
+            <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.2em;">🎯 {safe_title}</h3>
+            
+            <div style="margin: 15px 0;">
+                <p style="margin: 5px 0; color: #2c3e50; font-weight: 600;">
+                    📡 <strong>Source:</strong> {safe_source}
+                </p>
+                <p style="margin: 5px 0; color: #2c3e50; font-weight: 600;">
+                    📅 <strong>Published:</strong> {pub_date}
+                </p>
+                <p style="margin: 5px 0; color: #2c3e50; font-weight: 600;">
+                    🔥 <strong>Severity:</strong> <span style="color: {border_color}; font-weight: bold;">{severity}</span>
+                </p>
+                {created_date_html}
+            </div>
+            
+            <p style="margin: 15px 0; color: #34495e; line-height: 1.6; font-size: 14px;">
+                {safe_summary}
+            </p>
         </div>
-        <p style="margin: 15px 0; color: #2c3e50; font-size: 14px; line-height: 1.6;">{item.summary}</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Use the existing detailed view
-    render_elite_threat_item_details(item)
+        """, unsafe_allow_html=True)
+        
+        # Use the existing detailed view
+        render_elite_threat_item_details(item)
 
 def render_elite_threat_item_details(item: ThreatIntelItem):
     """Render the detailed expandable section for a threat item."""
@@ -841,7 +911,7 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
     with filter_col3:
         # Date range filter
         date_filter = st.selectbox("📅 Time Period", 
-                                 ["All Time", "Last 24 Hours", "Last 3 Days", "Last 7 Days", "Last 30 Days", "Custom Range"])
+                                 ["All Time", "Last 24 Hours", "Last 3 Days", "Last 7 Days", "Last 30 Days", "Last 60 Days", "Custom Range"])
     
     with filter_col4:
         # Sort order
@@ -868,6 +938,8 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
         days_back = 7
     elif date_filter == "Last 30 Days":
         days_back = 30
+    elif date_filter == "Last 60 Days":
+        days_back = 60
     
     # Items to show and refresh button
     limit_col1, limit_col2 = st.columns([3, 1])
@@ -929,9 +1001,53 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
     elif sort_order == "Source":
         threats = sorted(threats, key=lambda x: x.source)
     
-    # Show filtering results
+    # Show filtering results and data freshness info
     if len(threats) != original_count:
         st.info(f"📊 Showing {len(threats)} of {original_count} threats after filtering")
+    
+    # Data freshness information with helpful guidance
+    if threats:
+        # Find the newest threat by creation time
+        newest_threat = None
+        try:
+            for threat in threats:
+                if hasattr(threat, 'created_at') and threat.created_at:
+                    if newest_threat is None:
+                        newest_threat = threat
+                    else:
+                        newest_created = datetime.fromisoformat(newest_threat.created_at.replace('Z', ''))
+                        current_created = datetime.fromisoformat(threat.created_at.replace('Z', ''))
+                        if current_created > newest_created:
+                            newest_threat = threat
+            
+            if newest_threat:
+                newest_time = datetime.fromisoformat(newest_threat.created_at.replace('Z', ''))
+                time_since_newest = (current_time - newest_time).total_seconds()
+                
+                if time_since_newest < 1800:  # Less than 30 minutes
+                    minutes_ago = int(time_since_newest / 60)
+                    st.success(f"🔥 **Latest threat added:** {minutes_ago} minutes ago - Data is fresh!")
+                elif time_since_newest < 7200:  # Less than 2 hours
+                    hours_ago = time_since_newest / 3600
+                    st.info(f"⏰ **Latest threat added:** {hours_ago:.1f} hours ago")
+                elif time_since_newest < 86400:  # Less than 1 day
+                    hours_ago = int(time_since_newest / 3600)
+                    st.info(f"📊 **Latest threat added:** {hours_ago} hours ago")
+                else:
+                    days_ago = int(time_since_newest / 86400)
+                    refresh_col1, refresh_col2 = st.columns([3, 1])
+                    with refresh_col1:
+                        st.warning(f"📅 **Latest threat added:** {days_ago} days ago - Consider refreshing feeds for newer intelligence!")
+                    with refresh_col2:
+                        if st.button("🚀 **Refresh Now**", type="primary"):
+                            # Clear cache and trigger refresh
+                            if hasattr(aggregator, '_threat_cache_dict'):
+                                aggregator._threat_cache_dict = {}
+                            st.rerun()
+        except Exception as e:
+            # If we can't determine freshness, show general info
+            st.info("📊 Showing available threat intelligence data")
+            logger.debug(f"Could not determine data freshness: {e}")
     
     # Display summary stats for current view
     if threats:
@@ -960,7 +1076,7 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
     older_threats = []
     
     for item in threats:
-        # Categorize by age
+        # Categorize by age - more realistic timeframes
         is_new = False
         is_recent = False
         
@@ -969,10 +1085,10 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
                 created_time = datetime.fromisoformat(item.created_at.replace('Z', ''))
                 time_diff = (current_time - created_time).total_seconds()
                 
-                if time_diff < 3600:  # 1 hour
+                if time_diff < 1800:  # 30 minutes
                     is_new = True
                     new_threats.append(item)
-                elif time_diff < 86400:  # 24 hours
+                elif time_diff < 7200:  # 2 hours  
                     is_recent = True  
                     recent_threats.append(item)
                 else:
@@ -984,7 +1100,7 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
     
     # Display new threats first with special highlighting
     if new_threats:
-        st.markdown("## 🆕 **BRAND NEW THREATS** (Last Hour)")
+        st.markdown("## 🆕 **BRAND NEW THREATS** (Last 30 Minutes)")
         st.markdown("🚨 **These threats were just discovered!**")
         
         for item in new_threats:
@@ -993,7 +1109,7 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
         st.markdown("---")
     
     if recent_threats:
-        st.markdown("## 🕐 **RECENT THREATS** (Last 24 Hours)")
+        st.markdown("## 🕐 **RECENT THREATS** (Last 2 Hours)")
         
         for item in recent_threats:
             render_threat_card(item, is_recent=True)
@@ -1003,6 +1119,13 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
     if older_threats:
         if new_threats or recent_threats:
             st.markdown("## 📚 **PREVIOUS THREATS**")
+        else:
+            # If no new or recent threats, show a helpful message
+            st.markdown("## 📚 **THREAT INTELLIGENCE FEED**")
+            if days_back:
+                st.info(f"📅 Showing threats from the last {days_back} days, sorted by when they were added to our system.")
+            else:
+                st.info("📅 Showing all available threats, sorted by when they were added to our system (most recent first).")
         
         for item in older_threats:
             render_threat_card(item)
