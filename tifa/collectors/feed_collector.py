@@ -48,14 +48,12 @@ class FeedCollector:
                     
                     # Create threat intel item
                     item = ThreatIntelItem(
-                        id=item_id,
                         title=entry.title,
-                        description=self._truncate_description(getattr(entry, 'summary', '')),
+                        summary=self._truncate_description(getattr(entry, 'summary', '')),
                         source=feed_info['name'],
-                        published=getattr(entry, 'published', datetime.now().isoformat()),
+                        published_date=getattr(entry, 'published', datetime.now().isoformat()),
                         link=entry.link,
-                        iocs=iocs,
-                        tags=self._extract_tags(content)
+                        iocs=iocs
                     )
                     
                     items.append(item)

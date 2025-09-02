@@ -291,14 +291,12 @@ class EliteThreatIntelAggregator:
                             try:
                                 # Quick AI analysis (optional - can be skipped for speed)
                                 if len(Config.GEMINI_API_KEYS) > 0:
-                                    analysis = self.ai_analyzer.analyze(
-                                        f"{item.title}\n{item.summary}",
-                                        analysis_type="summary"
-                                    )
+                                    summary = self.ai_analyzer.generate_summary(item)
                                     
                                     # Update item with AI insights
-                                    item.summary = analysis.get("summary", item.summary)
-                                    item.severity = analysis.get("severity", "Medium")
+                                    item.summary = summary if summary else item.summary
+                                    severity = self.ai_analyzer.assess_severity(item)
+                                    item.severity = severity if severity else "Medium"
                                 else:
                                     # Skip AI if no API keys
                                     item.severity = "Medium"
@@ -485,7 +483,7 @@ def render_elite_threat_item(item: ThreatIntelItem, show_correlations=True):
                     fig = px.pie(values=ioc_counts.values, names=ioc_counts.index, 
                                title="IOC Distribution", color_discrete_sequence=px.colors.qualitative.Set3)
                     fig.update_traces(textposition='inside', textinfo='percent+label')
-                    st.plotly_chart(fig, use_container_width=True, key=f"ioc_distribution_{item.id}")
+                    st.plotly_chart(fig, width="stretch", key=f"ioc_distribution_{item.id}")
             else:
                 st.info("🔍 No IOCs extracted from this threat intelligence.")
         
@@ -1262,7 +1260,7 @@ def render_elite_analytics(aggregator: EliteThreatIntelAggregator):
             if len(daily_threats) > 0:
                 fig = px.line(x=daily_threats.index, y=daily_threats.values,
                              title="Daily Threat Intelligence Volume")
-                st.plotly_chart(fig, use_container_width=True, key="daily_threats_timeline")
+                st.plotly_chart(fig, width="stretch", key="daily_threats_timeline")
             else:
                 st.info("📊 No trend data available")
         except Exception as e:
@@ -1275,7 +1273,7 @@ def render_elite_analytics(aggregator: EliteThreatIntelAggregator):
             if len(category_trends) > 0:
                 fig2 = px.area(category_trends, x='published_date', y='count', color='category',
                               title="Threat Categories Over Time")
-                st.plotly_chart(fig2, use_container_width=True, key="category_trends_area")
+                st.plotly_chart(fig2, width="stretch", key="category_trends_area")
             else:
                 st.info("📊 No category trend data available")
         except Exception as e:
@@ -1294,7 +1292,7 @@ def render_elite_analytics(aggregator: EliteThreatIntelAggregator):
                 if len(source_counts) > 0:
                     fig = px.pie(values=source_counts.values, names=source_counts.index,
                                 title="Threat Intelligence by Source")
-                    st.plotly_chart(fig, use_container_width=True, key="source_distribution_pie")
+                    st.plotly_chart(fig, width="stretch", key="source_distribution_pie")
                 else:
                     st.info("📊 No source data available")
             except Exception as e:
@@ -1335,7 +1333,7 @@ def render_elite_analytics(aggregator: EliteThreatIntelAggregator):
                                 title="Threat Severity Distribution",
                                 color=severity_counts.index,
                                 color_discrete_map=colors)
-                    st.plotly_chart(fig, use_container_width=True, key="severity_distribution_bar")
+                    st.plotly_chart(fig, width="stretch", key="severity_distribution_bar")
                 else:
                     st.info("📊 No severity data available")
             except Exception as e:
@@ -1349,7 +1347,7 @@ def render_elite_analytics(aggregator: EliteThreatIntelAggregator):
                 if len(severity_trends) > 0:
                     fig2 = px.line(severity_trends, x='published_date', y='count', color='severity',
                                   title="Severity Trends Over Time")
-                    st.plotly_chart(fig2, use_container_width=True, key="severity_trends_line")
+                    st.plotly_chart(fig2, width="stretch", key="severity_trends_line")
                 else:
                     st.info("📊 No severity trend data available")
             except Exception as e:
@@ -1377,7 +1375,7 @@ def render_elite_analytics(aggregator: EliteThreatIntelAggregator):
                 if len(ioc_data) > 0:
                     fig = px.histogram(ioc_data, x='ioc_count', bins=min(20, len(ioc_data)),
                                      title="IOC Count Distribution per Threat")
-                    st.plotly_chart(fig, use_container_width=True, key="ioc_count_histogram")
+                    st.plotly_chart(fig, width="stretch", key="ioc_count_histogram")
                 else:
                     st.info("📊 No valid IOC count data to display")
             except Exception as e:
