@@ -450,100 +450,61 @@ def render_elite_metrics(aggregator: EliteThreatIntelAggregator):
         )
 
 def render_threat_card(item: ThreatIntelItem, is_new: bool = False, is_recent: bool = False):
-    """Render a threat card with optional NEW/RECENT badges using Streamlit components."""
-    import html
+    """Render a threat card with optional NEW/RECENT badges using Streamlit native components."""
     
-    # Create a container for the threat card
+    # Determine severity styling
+    severity = getattr(item, 'severity', 'Medium')
+    severity_colors = {
+        'Critical': '🔴',
+        'High': '🟠', 
+        'Medium': '🟡',
+        'Low': '🟢'
+    }
+    severity_icon = severity_colors.get(severity, '🟡')
+    
+    # Create container with border styling based on badges
+    if is_new:
+        with st.container():
+            st.markdown("🆕 **BRAND NEW THREAT DETECTED!**", unsafe_allow_html=True)
+            st.error("🚨 This threat was just discovered!")
+    elif is_recent:
+        with st.container():
+            st.markdown("🕐 **RECENT THREAT**", unsafe_allow_html=True)
+            st.warning("⚠️ This threat was discovered recently.")
+    
+    # Main threat card container
     with st.container():
-        # Add badge if needed
-        if is_new:
-            st.markdown("""
-                <div style="text-align: center; margin-bottom: 10px;">
-                    <span style="background: linear-gradient(45deg, #ff4757, #ff3742); color: white; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block;">
-                        🆕 BRAND NEW
-                    </span>
-                </div>
-            """, unsafe_allow_html=True)
-        elif is_recent:
-            st.markdown("""
-                <div style="text-align: center; margin-bottom: 10px;">
-                    <span style="background: linear-gradient(45deg, #ffa502, #ff6348); color: white; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block;">
-                        🕐 RECENT
-                    </span>
-                </div>
-            """, unsafe_allow_html=True)
+        # Title
+        st.markdown(f"### 🎯 {item.title}")
         
-        # Safely escape HTML content
-        safe_title = html.escape(str(item.title))
-        safe_source = html.escape(str(item.source))
-        safe_summary = html.escape(str(item.summary))
+        # Create columns for threat metadata
+        col1, col2 = st.columns(2)
         
-        # Determine border color based on severity
-        severity = getattr(item, 'severity', 'Medium')
-        border_colors = {
-            'Critical': '#e74c3c',
-            'High': '#f39c12', 
-            'Medium': '#3498db',
-            'Low': '#27ae60'
-        }
-        border_color = border_colors.get(severity, '#3498db')
+        with col1:
+            st.markdown(f"**📡 Source:** {item.source}")
+            pub_date = 'Unknown'
+            if item.published_date:
+                try:
+                    pub_date = item.published_date.split('T')[0]
+                except:
+                    pub_date = str(item.published_date)[:10]
+            st.markdown(f"**📅 Published:** {pub_date}")
         
-        # Special styling for new/recent threats
-        extra_style = ""
-        if is_new:
-            extra_style = "border: 3px solid #ff4757; box-shadow: 0 0 15px rgba(255, 71, 87, 0.3);"
-        elif is_recent:
-            extra_style = "border: 2px solid #ffa502; box-shadow: 0 0 10px rgba(255, 165, 2, 0.2);"
+        with col2:
+            st.markdown(f"**🔥 Severity:** {severity_icon} {severity}")
+            if hasattr(item, 'created_at') and item.created_at:
+                try:
+                    created_display = str(getattr(item, "created_at", "Unknown"))[:16].replace("T", " ")
+                    st.markdown(f"**⏰ Added:** {created_display}")
+                except:
+                    pass
         
-        # Get safe published date
-        pub_date = 'Unknown'
-        if item.published_date:
-            try:
-                pub_date = item.published_date.split('T')[0]
-            except:
-                pub_date = str(item.published_date)[:10]
+        # Summary
+        st.markdown("**📝 Summary:**")
+        st.markdown(f"> {item.summary}")
         
-        # Get safe created date
-        created_date_html = ""
-        if hasattr(item, 'created_at') and item.created_at:
-            try:
-                created_display = str(getattr(item, "created_at", "Unknown"))[:16].replace("T", " ")
-                created_date_html = f'<p style="margin: 5px 0; color: #2c3e50; font-weight: 600;">⏰ <strong>Added:</strong> {created_display}</p>'
-            except:
-                pass
-        
-        # Create the threat card using a styled container
-        st.markdown(f"""
-        <div style="
-            border-left: 5px solid {border_color};
-            padding: 20px;
-            margin: 15px 0;
-            border-radius: 8px;
-            background-color: #ffffff;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border: 1px solid #e0e0e0;
-            {extra_style}
-        ">
-            <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.2em;">🎯 {safe_title}</h3>
-            
-            <div style="margin: 15px 0;">
-                <p style="margin: 5px 0; color: #2c3e50; font-weight: 600;">
-                    📡 <strong>Source:</strong> {safe_source}
-                </p>
-                <p style="margin: 5px 0; color: #2c3e50; font-weight: 600;">
-                    📅 <strong>Published:</strong> {pub_date}
-                </p>
-                <p style="margin: 5px 0; color: #2c3e50; font-weight: 600;">
-                    🔥 <strong>Severity:</strong> <span style="color: {border_color}; font-weight: bold;">{severity}</span>
-                </p>
-                {created_date_html}
-            </div>
-            
-            <p style="margin: 15px 0; color: #34495e; line-height: 1.6; font-size: 14px;">
-                {safe_summary}
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        # Add separator
+        st.markdown("---")
         
         # Use the existing detailed view
         render_elite_threat_item_details(item)
@@ -632,134 +593,6 @@ def render_elite_threat_item_details(item: ThreatIntelItem):
             
             # Threat actor attribution (placeholder)
             st.info("👤 Threat actor attribution coming soon...")
-
-def render_elite_threat_item(item: ThreatIntelItem, show_correlations=True):
-    """Render individual threat with enhanced visualization and better contrast."""
-    severity_class = getattr(item, 'severity', 'medium').lower()
-    
-    # Enhanced threat card with better contrast
-    st.markdown(f"""
-    <div class="threat-card {severity_class}">
-        <h4>🎯 {item.title}</h4>
-        <div style="display: flex; justify-content: space-between; margin: 15px 0; flex-wrap: wrap;">
-            <span><strong>📡 Source:</strong> {item.source}</span>
-            <span><strong>📅 Published:</strong> {item.published_date.split('T')[0] if item.published_date else 'Unknown'}</span>
-            <span><strong>🔥 Severity:</strong> <span style="color: {'#e74c3c' if severity_class == 'critical' else '#f39c12' if severity_class == 'high' else '#3498db' if severity_class == 'medium' else '#27ae60'}; font-weight: bold;">{getattr(item, 'severity', 'Medium')}</span></span>
-        </div>
-        <p style="margin: 15px 0; color: #2c3e50; font-size: 14px; line-height: 1.6;">{item.summary}</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Enhanced expandable details with better organization
-    with st.expander("🔍 **ADVANCED THREAT ANALYSIS**", expanded=False):
-        
-        # Create tabs for different analysis views
-        tab1, tab2, tab3, tab4 = st.tabs(["📋 **Details**", "🎯 **IOCs**", "🧠 **AI Analysis**", "🔗 **Intelligence**"])
-        
-        with tab1:
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"**🔗 Original Article:** [View Source]({item.link})")
-                st.markdown(f"**📂 Category:** {getattr(item, 'category', 'Unknown')}")
-                st.markdown(f"**🎯 Priority:** {getattr(item, 'priority', 'Medium')}")
-                st.markdown(f"**📊 Confidence:** {getattr(item, 'confidence', 'Medium')}")
-            
-            with col2:
-                st.markdown(f"**🤖 Analysis Type:** {getattr(item, 'analysis_type', 'Standard')}")
-                st.markdown(f"**🔑 API Key:** ...{getattr(item, 'api_key_used', 'N/A')}")
-                st.markdown(f"**⏰ Created:** {getattr(item, 'created_at', 'Unknown')}")
-                st.markdown(f"**🆔 Item ID:** `{getattr(item, 'id', 'N/A')}`")
-        
-        with tab2:
-            # Enhanced IOC visualization
-            all_iocs = []
-            for ioc_type, iocs in item.iocs.items():
-                for ioc in iocs:
-                    all_iocs.append({"🔍 Type": ioc_type.upper().replace('_', ' '), "💎 Value": ioc, "🔗 Search": f"[Hunt](?ioc={ioc})"})
-            
-            if all_iocs:
-                df_iocs = pd.DataFrame(all_iocs)
-                st.markdown(f"**Found {len(all_iocs)} IOCs:**")
-                st.dataframe(df_iocs, use_container_width=True, hide_index=True)
-                
-                # IOC type distribution
-                if len(all_iocs) > 1:
-                    ioc_counts = df_iocs['🔍 Type'].value_counts()
-                    fig = px.pie(values=ioc_counts.values, names=ioc_counts.index, 
-                               title="IOC Distribution", color_discrete_sequence=px.colors.qualitative.Set3)
-                    fig.update_traces(textposition='inside', textinfo='percent+label')
-                    st.plotly_chart(fig, width="stretch", key=f"ioc_distribution_{item.id}")
-            else:
-                st.info("🔍 No IOCs extracted from this threat intelligence.")
-        
-        with tab3:
-            # Enhanced AI Analysis Display
-            st.markdown("### 🧠 **AI-Powered Analysis**")
-            
-            # Display AI insights in organized format
-            ai_insights = {
-                "📊 **Summary**": getattr(item, 'summary', 'No summary available'),
-                "🔥 **Severity Assessment**": getattr(item, 'severity', 'Medium'),
-                "📂 **Threat Category**": getattr(item, 'category', 'Unknown'),
-                "🎯 **Confidence Level**": getattr(item, 'confidence', 'Medium'),
-                "🔍 **Key IOCs Identified**": getattr(item, 'key_iocs', []),
-                "💻 **Affected Systems**": getattr(item, 'affected_systems', [])
-            }
-            
-            for key, value in ai_insights.items():
-                if value and value != 'Unknown':
-                    if isinstance(value, list):
-                        if value:
-                            st.markdown(f"**{key}:** {', '.join(map(str, value))}")
-                    else:
-                        st.markdown(f"**{key}:** {value}")
-            
-            # Show AI model used
-            if hasattr(item, 'analysis_type'):
-                st.info(f"🤖 Analysis powered by {getattr(item, 'analysis_type', 'Advanced AI')}")
-        
-        with tab4:
-            # Enhanced Intelligence Context
-            st.markdown("### 🔗 **Threat Intelligence Context**")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("**📊 Source Reliability:**")
-                source_reliability = {
-                    "🏛️ US-CERT CISA": "🟢 Very High",
-                    "🏛️ NIST NVD": "🟢 Very High", 
-                    "🏛️ FBI IC3": "🟢 Very High",
-                    "🎯 SANS ISC": "🟢 High",
-                    "🎯 MITRE ATT&CK": "🟢 Very High",
-                    "🔬 Krebs on Security": "🟡 Medium-High",
-                    "🔬 MalwareBytes Labs": "🟡 Medium-High",
-                    "🚨 Exploit-DB": "🟡 Medium"
-                }
-                reliability = source_reliability.get(item.source, "🟡 Medium")
-                st.markdown(f"{reliability}")
-                
-            with col2:
-                st.markdown("**⚡ Threat Velocity:**")
-                # Calculate how recent the threat is
-                try:
-                    if item.published_date:
-                        pub_date = datetime.fromisoformat(item.published_date.replace('Z', '+00:00'))
-                        age_hours = (datetime.now() - pub_date.replace(tzinfo=None)).total_seconds() / 3600
-                        if age_hours < 6:
-                            velocity = "🔴 Breaking"
-                        elif age_hours < 24:
-                            velocity = "🟠 Recent"
-                        elif age_hours < 168:  # 1 week
-                            velocity = "🟡 Current"
-                        else:
-                            velocity = "🟢 Historical"
-                        st.markdown(f"{velocity}")
-                except:
-                    st.markdown("🟡 Unknown")
-            
-            # Correlation hints
-            st.markdown("**🔗 Similar Threats:**")
-            st.info("💡 Advanced correlation engine coming soon...")
 
 def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
     """Main elite dashboard with advanced features and fallback data."""
@@ -1129,8 +962,6 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
         
         for item in older_threats:
             render_threat_card(item)
-        
-        render_elite_threat_item(item)
 
 def render_elite_ioc_search(aggregator: EliteThreatIntelAggregator):
     """Enhanced IOC Hunter with advanced search and analysis capabilities."""
