@@ -35,12 +35,40 @@ class Config:
     AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")
     
     # Advanced AI Model Options for Different Tasks
-    GEMINI_MODELS = {
-        "summary": "gemini-2.5-flash",      # Latest and fastest for summaries
-        "analysis": "gemini-2.5-flash-lite",          # Latest experimental for deep analysis
-        "classification": "gemini-2.0-flash-lite", # Quick classification
-        "correlation": "gemini-2.0-flash"        # Complex correlations
-    }
+    GEMINI_MODELS = [
+        {
+            "name": "gemini-2.5-flash",
+            "task": "summary",
+            "rpm": 15,  # Requests per minute
+            "rpd": 1500,  # Requests per day
+            "context_length": 2097152,
+            "temperature": 0.3
+        },
+        {
+            "name": "gemini-2.5-flash-lite", 
+            "task": "analysis",
+            "rpm": 15,
+            "rpd": 1500,
+            "context_length": 1048576,
+            "temperature": 0.5
+        },
+        {
+            "name": "gemini-2.0-flash-lite",
+            "task": "classification",
+            "rpm": 15,
+            "rpd": 1500,
+            "context_length": 1048576,
+            "temperature": 0.1
+        },
+        {
+            "name": "gemini-2.0-flash",
+            "task": "correlation",
+            "rpm": 15,
+            "rpd": 1500,
+            "context_length": 2097152,
+            "temperature": 0.7
+        }
+    ]
 
     @classmethod
     def get_random_api_key(cls) -> str:
@@ -89,6 +117,20 @@ class Config:
     MAX_SEARCH_RESULTS = int(os.getenv("MAX_SEARCH_RESULTS", 100))
     MAX_EXPORT_ITEMS = int(os.getenv("MAX_EXPORT_ITEMS", 1000))
     AUTO_REFRESH_INTERVAL = int(os.getenv("AUTO_REFRESH_INTERVAL", 300))
+    
+    # --- Threat Keywords for Classification ---
+    THREAT_KEYWORDS = [
+        "malware", "ransomware", "phishing", "trojan", "virus", "botnet", 
+        "exploit", "vulnerability", "apt", "backdoor", "rootkit", "spyware",
+        "adware", "keylogger", "worm", "ddos", "dos", "injection", "xss",
+        "csrf", "rce", "lfi", "rfi", "sqli", "clickjacking", "social engineering",
+        "scam", "fraud", "identity theft", "data breach", "cyber attack",
+        "zero-day", "0day", "cve", "security", "threat", "risk", "incident",
+        "compromise", "breach", "attack", "hacker", "cybercriminal"
+    ]
+    
+    # --- Multi-threading Configuration ---
+    MAX_FEED_WORKERS = int(os.getenv("MAX_FEED_WORKERS", 5))
     
     # --- AI Processing Configuration ---
     AI_REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", 45))

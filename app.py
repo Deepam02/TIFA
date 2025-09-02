@@ -282,7 +282,7 @@ class EliteThreatIntelAggregator:
                         progress_callback(f"🔄 Processing {feed_info['name']}...")
                     
                     # Process single feed with limited items
-                    items = self.feed_collector.fetch_feed(feed_info)
+                    items = self.feed_collector.collect_from_feed(feed_info)
                     
                     if items:
                         # Process only first 3 items for speed, save immediately

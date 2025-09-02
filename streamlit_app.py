@@ -56,7 +56,7 @@ except Exception as e:
     
     import pandas as pd
     df = pd.DataFrame(sample_data)
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width='stretch')
     
     st.info("Please refresh the page or contact support if the issue persists.")
     
