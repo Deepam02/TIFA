@@ -264,16 +264,16 @@ class EliteThreatIntelAggregator:
         threats = []
         for data in fallback_data:
             threat = ThreatIntelItem(
-                id=data["id"],
                 title=data["title"],
                 source=data["source"],
                 link=data["link"],
                 published_date=data["published_date"],
                 summary=data["summary"],
-                iocs=data["iocs"]
+                iocs=data["iocs"],
+                severity=data["severity"]
             )
+            # Set additional attributes
             threat.category = data["category"]
-            threat.severity = data["severity"]
             threats.append(threat)
             
         return threats
