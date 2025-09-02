@@ -75,6 +75,7 @@ st.markdown("""
         background-color: #ffffff;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         border: 1px solid #e0e0e0;
+        position: relative;
     }
     
     .threat-card h4 {
@@ -108,6 +109,18 @@ st.markdown("""
     .low { 
         border-left-color: #27ae60; 
         background: linear-gradient(135deg, #e8f5e8 0%, #f4faf4 100%);
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes newThreatGlow {
+        0% { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        50% { box-shadow: 0 4px 20px rgba(255, 71, 87, 0.4); }
+        100% { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     }
     
     .stSelectbox > div > div {
@@ -181,20 +194,28 @@ class EliteThreatIntelAggregator:
             self.fallback_mode = True
             st.warning(f"⚠️ Running in fallback mode: {str(e)}")
 
-    def get_cached_threats(self, limit: int = 50):
+    def get_cached_threats(self, limit: int = 50, days_back: int = None, order_by: str = "created_at"):
         """Get threats with caching for better performance."""
         current_time = time.time()
         
-        # Check if cache is valid
-        if (self._threat_cache is not None and 
+        # Create cache key including filters
+        cache_key = f"{limit}_{days_back}_{order_by}"
+        
+        # Check if cache is valid for this specific query
+        if (hasattr(self, '_threat_cache_dict') and 
+            cache_key in self._threat_cache_dict and
             current_time - self._cache_timestamp < self._cache_duration):
-            return self._threat_cache[:limit]
+            return self._threat_cache_dict[cache_key]
+        
+        # Initialize cache dict if not exists
+        if not hasattr(self, '_threat_cache_dict'):
+            self._threat_cache_dict = {}
         
         # Fetch fresh data
         try:
             if self.db:
-                threats = self.db.get_recent_threats(limit=limit)
-                self._threat_cache = threats
+                threats = self.db.get_recent_threats(limit=limit, days_back=days_back, order_by=order_by)
+                self._threat_cache_dict[cache_key] = threats
                 self._cache_timestamp = current_time
                 return threats
             else:
@@ -205,7 +226,7 @@ class EliteThreatIntelAggregator:
     
     def _get_fallback_threats(self):
         """Provide fallback threat data when database is unavailable."""
-        from models import ThreatIntelItem
+        from tifa.core.models import ThreatIntelItem
         from datetime import datetime
         
         fallback_data = [
@@ -427,6 +448,120 @@ def render_elite_metrics(aggregator: EliteThreatIntelAggregator):
             value=aggregator.metrics.get("alerts_generated", 0) if hasattr(aggregator, 'metrics') else 0,
             delta="Real-time monitoring"
         )
+
+def render_threat_card(item: ThreatIntelItem, is_new: bool = False, is_recent: bool = False):
+    """Render a threat card with optional NEW/RECENT badges."""
+    severity_class = getattr(item, 'severity', 'medium').lower()
+    
+    # Prepare badges
+    badge_html = ""
+    if is_new:
+        badge_html = '<span style="background: linear-gradient(45deg, #ff4757, #ff3742); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-right: 10px; animation: pulse 2s infinite;">🆕 BRAND NEW</span>'
+    elif is_recent:
+        badge_html = '<span style="background: linear-gradient(45deg, #ffa502, #ff6348); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-right: 10px;">🕐 RECENT</span>'
+    
+    # Enhanced threat card with badges
+    st.markdown(f"""
+    <div class="threat-card {severity_class}" style="{'border: 3px solid #ff4757; box-shadow: 0 0 15px rgba(255, 71, 87, 0.3);' if is_new else 'border: 2px solid #ffa502;' if is_recent else ''}">
+        {badge_html}
+        <h4>🎯 {item.title}</h4>
+        <div style="display: flex; justify-content: space-between; margin: 15px 0; flex-wrap: wrap;">
+            <span><strong>📡 Source:</strong> {item.source}</span>
+            <span><strong>📅 Published:</strong> {item.published_date.split('T')[0] if item.published_date else 'Unknown'}</span>
+            <span><strong>🔥 Severity:</strong> <span style="color: {'#e74c3c' if severity_class == 'critical' else '#f39c12' if severity_class == 'high' else '#3498db' if severity_class == 'medium' else '#27ae60'}; font-weight: bold;">{getattr(item, 'severity', 'Medium')}</span></span>
+            {f'<span><strong>⏰ Added:</strong> {getattr(item, "created_at", "Unknown")[:16].replace("T", " ")}</span>' if hasattr(item, 'created_at') and item.created_at else ''}
+        </div>
+        <p style="margin: 15px 0; color: #2c3e50; font-size: 14px; line-height: 1.6;">{item.summary}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Use the existing detailed view
+    render_elite_threat_item_details(item)
+
+def render_elite_threat_item_details(item: ThreatIntelItem):
+    """Render the detailed expandable section for a threat item."""
+    # Enhanced expandable details with better organization
+    with st.expander("🔍 **ADVANCED THREAT ANALYSIS**", expanded=False):
+        
+        # Create tabs for different analysis views
+        tab1, tab2, tab3, tab4 = st.tabs(["📋 **Details**", "🎯 **IOCs**", "🧠 **AI Analysis**", "🔗 **Intelligence**"])
+        
+        with tab1:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"**🔗 Original Article:** [View Source]({item.link})")
+                st.markdown(f"**📂 Category:** {getattr(item, 'category', 'Unknown')}")
+                st.markdown(f"**🎯 Priority:** {getattr(item, 'priority', 'Medium')}")
+                st.markdown(f"**📊 Confidence:** {getattr(item, 'confidence', 'Medium')}")
+            
+            with col2:
+                st.markdown(f"**🤖 Analysis Type:** {getattr(item, 'analysis_type', 'Standard')}")
+                st.markdown(f"**🔑 API Key:** ...{getattr(item, 'api_key_used', 'N/A')}")
+                st.markdown(f"**⏰ Created:** {getattr(item, 'created_at', 'Unknown')}")
+                st.markdown(f"**🆔 Item ID:** `{getattr(item, 'id', 'N/A')}`")
+        
+        with tab2:
+            # Enhanced IOC visualization
+            all_iocs = []
+            for ioc_type, iocs in item.iocs.items():
+                for ioc in iocs:
+                    all_iocs.append({"🔍 Type": ioc_type.upper().replace('_', ' '), "💎 Value": ioc, "🔗 Search": f"[Hunt](?ioc={ioc})"})
+            
+            if all_iocs:
+                df_iocs = pd.DataFrame(all_iocs)
+                st.markdown(f"**Found {len(all_iocs)} IOCs:**")
+                st.dataframe(df_iocs, use_container_width=True, hide_index=True)
+                
+                # IOC type distribution
+                if len(all_iocs) > 1:
+                    ioc_counts = df_iocs['🔍 Type'].value_counts()
+                    fig = px.pie(values=ioc_counts.values, names=ioc_counts.index, 
+                               title="IOC Distribution", color_discrete_sequence=px.colors.qualitative.Set3)
+                    fig.update_traces(textposition='inside', textinfo='percent+label')
+                    st.plotly_chart(fig, width="stretch", key=f"ioc_distribution_{item.id}")
+            else:
+                st.info("🔍 No IOCs extracted from this threat intelligence.")
+        
+        with tab3:
+            # Enhanced AI Analysis Display
+            st.markdown("### 🧠 **AI-Powered Analysis**")
+            
+            # AI Summary
+            if hasattr(item, 'ai_summary') and item.ai_summary:
+                st.markdown("**📋 AI-Generated Summary:**")
+                st.markdown(f"> {item.ai_summary}")
+            
+            # Threat Assessment
+            if hasattr(item, 'threat_assessment') and item.threat_assessment:
+                st.markdown("**⚠️ Threat Assessment:**")
+                st.markdown(f"> {item.threat_assessment}")
+            
+            # Technical Analysis
+            if hasattr(item, 'technical_analysis') and item.technical_analysis:
+                st.markdown("**🔬 Technical Analysis:**")
+                st.markdown(f"> {item.technical_analysis}")
+            
+            # Recommendations
+            if hasattr(item, 'recommendations') and item.recommendations:
+                st.markdown("**💡 Recommendations:**")
+                st.markdown(f"> {item.recommendations}")
+            
+            # Model info
+            if hasattr(item, 'model_used') and item.model_used:
+                st.info(f"🤖 Analysis generated using: **{item.model_used}**")
+            
+            if not any(hasattr(item, attr) for attr in ['ai_summary', 'threat_assessment', 'technical_analysis', 'recommendations']):
+                st.warning("🤖 AI analysis not yet available for this threat.")
+        
+        with tab4:
+            # Correlation and Intelligence
+            st.markdown("### 🔗 **Intelligence Correlation**")
+            
+            # Related threats (placeholder)
+            st.info("🔗 Related threat correlation coming soon...")
+            
+            # Threat actor attribution (placeholder)
+            st.info("👤 Threat actor attribution coming soon...")
 
 def render_elite_threat_item(item: ThreatIntelItem, show_correlations=True):
     """Render individual threat with enhanced visualization and better contrast."""
@@ -691,22 +826,76 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
         time.sleep(10)
         st.rerun()
     
-    # Filter controls
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        severity_filter = st.selectbox("🔥 Severity Filter", ["All", "Critical", "High", "Medium", "Low"])
-    with col2:
-        source_filter = st.selectbox("📡 Source Filter", ["All"] + [feed["name"] for feed in Config.THREAT_FEEDS])
-    with col3:
-        limit = st.slider("📄 Items to Show", 5, 100, 20)
+    # Filter controls with date filtering
+    st.markdown("### 🔧 **Filtering & Display Options**")
     
-    # Get and display threats with fallback
+    # Create filter columns
+    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
+    
+    with filter_col1:
+        severity_filter = st.selectbox("🔥 Severity Filter", ["All", "Critical", "High", "Medium", "Low"])
+    
+    with filter_col2:
+        source_filter = st.selectbox("📡 Source Filter", ["All"] + [feed["name"] for feed in Config.THREAT_FEEDS])
+    
+    with filter_col3:
+        # Date range filter
+        date_filter = st.selectbox("📅 Time Period", 
+                                 ["All Time", "Last 24 Hours", "Last 3 Days", "Last 7 Days", "Last 30 Days", "Custom Range"])
+    
+    with filter_col4:
+        # Sort order
+        sort_order = st.selectbox("📊 Sort By", 
+                                ["Newest Added", "Newest Published", "Severity", "Source"])
+    
+    # Custom date range picker if selected
+    start_date, end_date, days_back = None, None, None
+    if date_filter == "Custom Range":
+        date_col1, date_col2 = st.columns(2)
+        with date_col1:
+            start_date = st.date_input("Start Date", value=datetime.now() - timedelta(days=7))
+        with date_col2:
+            end_date = st.date_input("End Date", value=datetime.now())
+        
+        if start_date and end_date:
+            start_date = start_date.strftime("%Y-%m-%d")
+            end_date = end_date.strftime("%Y-%m-%d")
+    elif date_filter == "Last 24 Hours":
+        days_back = 1
+    elif date_filter == "Last 3 Days":
+        days_back = 3
+    elif date_filter == "Last 7 Days":
+        days_back = 7
+    elif date_filter == "Last 30 Days":
+        days_back = 30
+    
+    # Items to show and refresh button
+    limit_col1, limit_col2 = st.columns([3, 1])
+    with limit_col1:
+        limit = st.slider("📄 Items to Show", 5, 100, 20)
+    with limit_col2:
+        st.markdown("<br>", unsafe_allow_html=True)  # Add spacing
+        if st.button("🔄 **Apply Filters**", type="primary", use_container_width=True):
+            # Clear cache to force refresh with new filters
+            if hasattr(aggregator, '_threat_cache_dict'):
+                aggregator._threat_cache_dict = {}
+            st.rerun()
+    
+    # Get and display threats with advanced filtering
     try:
-        if hasattr(aggregator, 'get_cached_threats'):
-            threats = aggregator.get_cached_threats(limit=limit)
+        # Determine sort order
+        order_by = "created_at"  # Default to newest added
+        if sort_order == "Newest Published":
+            order_by = "published_date"
+        elif sort_order == "Newest Added":
+            order_by = "created_at"
+        
+        # Get threats based on date filter
+        if date_filter == "Custom Range" and start_date and end_date:
+            threats = aggregator.db.get_threats_by_date_range(start_date, end_date, limit=limit)
         else:
-            threats = aggregator.db.get_recent_threats(limit=limit)
-            
+            threats = aggregator.get_cached_threats(limit=limit, days_back=days_back, order_by=order_by)
+        
         # If no threats in database, use fallback
         if not threats or len(threats) == 0:
             threats = aggregator._get_fallback_threats()
@@ -724,29 +913,99 @@ def render_elite_dashboard(aggregator: EliteThreatIntelAggregator):
             st.info("�🔍 No threat intelligence data found. Click '🚀 REFRESH ALL FEEDS' to start collecting.")
         return
     
-    # Apply filters
+    # Apply additional filters
+    original_count = len(threats)
+    
     if severity_filter != "All":
         threats = [t for t in threats if getattr(t, 'severity', 'Medium') == severity_filter]
     
     if source_filter != "All":
         threats = [t for t in threats if t.source == source_filter]
     
-    # Display threats with "NEW" badges for recent ones
+    # Apply sorting if not already handled by database query
+    if sort_order == "Severity":
+        severity_order = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
+        threats = sorted(threats, key=lambda x: severity_order.get(getattr(x, 'severity', 'Medium'), 2))
+    elif sort_order == "Source":
+        threats = sorted(threats, key=lambda x: x.source)
+    
+    # Show filtering results
+    if len(threats) != original_count:
+        st.info(f"📊 Showing {len(threats)} of {original_count} threats after filtering")
+    
+    # Display summary stats for current view
+    if threats:
+        stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
+        
+        severity_counts = {}
+        for threat in threats:
+            sev = getattr(threat, 'severity', 'Medium')
+            severity_counts[sev] = severity_counts.get(sev, 0) + 1
+        
+        with stats_col1:
+            st.metric("🔴 Critical", severity_counts.get("Critical", 0))
+        with stats_col2:
+            st.metric("🟠 High", severity_counts.get("High", 0))
+        with stats_col3:
+            st.metric("🟡 Medium", severity_counts.get("Medium", 0))
+        with stats_col4:
+            st.metric("🟢 Low", severity_counts.get("Low", 0))
+        
+        st.markdown("---")
+    
+    # Display threats with enhanced "NEW" badges and better organization
     current_time = datetime.now()
-    for i, item in enumerate(threats):
-        # Check if threat is from the last 10 minutes (new)
+    new_threats = []
+    recent_threats = []
+    older_threats = []
+    
+    for item in threats:
+        # Categorize by age
         is_new = False
+        is_recent = False
+        
         try:
             if hasattr(item, 'created_at') and item.created_at:
                 created_time = datetime.fromisoformat(item.created_at.replace('Z', ''))
                 time_diff = (current_time - created_time).total_seconds()
-                is_new = time_diff < 600  # 10 minutes
+                
+                if time_diff < 3600:  # 1 hour
+                    is_new = True
+                    new_threats.append(item)
+                elif time_diff < 86400:  # 24 hours
+                    is_recent = True  
+                    recent_threats.append(item)
+                else:
+                    older_threats.append(item)
+            else:
+                older_threats.append(item)
         except:
-            pass
+            older_threats.append(item)
+    
+    # Display new threats first with special highlighting
+    if new_threats:
+        st.markdown("## 🆕 **BRAND NEW THREATS** (Last Hour)")
+        st.markdown("🚨 **These threats were just discovered!**")
         
-        # Add NEW badge for recent threats
-        if is_new:
-            st.markdown("🆕 **NEW THREAT DETECTED!**", unsafe_allow_html=True)
+        for item in new_threats:
+            render_threat_card(item, is_new=True)
+            
+        st.markdown("---")
+    
+    if recent_threats:
+        st.markdown("## 🕐 **RECENT THREATS** (Last 24 Hours)")
+        
+        for item in recent_threats:
+            render_threat_card(item, is_recent=True)
+            
+        st.markdown("---")
+    
+    if older_threats:
+        if new_threats or recent_threats:
+            st.markdown("## 📚 **PREVIOUS THREATS**")
+        
+        for item in older_threats:
+            render_threat_card(item)
         
         render_elite_threat_item(item)
 

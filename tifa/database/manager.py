@@ -77,16 +77,80 @@ class ThreatIntelDatabase:
         except sqlite3.Error as e:
             logger.error(f"Database error saving item: {e}")
 
-    def get_recent_threats(self, limit: int = 50) -> List[ThreatIntelItem]:
-        """Retrieves a list of the most recent threat intelligence items."""
+    def get_recent_threats(self, limit: int = 50, days_back: int = None, order_by: str = "created_at") -> List[ThreatIntelItem]:
+        """Retrieves a list of the most recent threat intelligence items.
+        
+        Args:
+            limit: Maximum number of items to return
+            days_back: If specified, only return items from the last N days
+            order_by: Field to order by - "created_at" (when added to our DB) or "published_date" (original publication)
+        """
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT * FROM threat_intel ORDER BY datetime(published_date) DESC LIMIT ?", (limit,))
+                
+                # Build the query based on parameters
+                if days_back:
+                    if order_by == "created_at":
+                        query = """
+                        SELECT * FROM threat_intel 
+                        WHERE datetime(created_at) >= datetime('now', '-{} days')
+                        ORDER BY datetime(created_at) DESC LIMIT ?
+                        """.format(days_back)
+                    else:
+                        query = """
+                        SELECT * FROM threat_intel 
+                        WHERE datetime(published_date) >= datetime('now', '-{} days')
+                        ORDER BY datetime(published_date) DESC LIMIT ?
+                        """.format(days_back)
+                else:
+                    if order_by == "created_at":
+                        query = "SELECT * FROM threat_intel ORDER BY datetime(created_at) DESC LIMIT ?"
+                    else:
+                        query = "SELECT * FROM threat_intel ORDER BY datetime(published_date) DESC LIMIT ?"
+                
+                cursor.execute(query, (limit,))
                 rows = cursor.fetchall()
                 return [self._row_to_item(row) for row in rows]
         except sqlite3.Error as e:
             logger.error(f"Database error getting recent threats: {e}")
+            return []
+
+    def get_threats_by_date_range(self, start_date: str = None, end_date: str = None, limit: int = 50) -> List[ThreatIntelItem]:
+        """Get threats within a specific date range based on when they were added to our system."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                if start_date and end_date:
+                    query = """
+                    SELECT * FROM threat_intel 
+                    WHERE datetime(created_at) BETWEEN datetime(?) AND datetime(?)
+                    ORDER BY datetime(created_at) DESC LIMIT ?
+                    """
+                    cursor.execute(query, (start_date, end_date, limit))
+                elif start_date:
+                    query = """
+                    SELECT * FROM threat_intel 
+                    WHERE datetime(created_at) >= datetime(?)
+                    ORDER BY datetime(created_at) DESC LIMIT ?
+                    """
+                    cursor.execute(query, (start_date, limit))
+                elif end_date:
+                    query = """
+                    SELECT * FROM threat_intel 
+                    WHERE datetime(created_at) <= datetime(?)
+                    ORDER BY datetime(created_at) DESC LIMIT ?
+                    """
+                    cursor.execute(query, (end_date, limit))
+                else:
+                    # No date filter, return recent
+                    return self.get_recent_threats(limit=limit, order_by="created_at")
+                
+                rows = cursor.fetchall()
+                return [self._row_to_item(row) for row in rows]
+        except sqlite3.Error as e:
+            logger.error(f"Database error getting threats by date range: {e}")
             return []
 
     def search_ioc(self, ioc_query: str) -> List[ThreatIntelItem]:
