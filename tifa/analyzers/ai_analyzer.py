@@ -124,8 +124,12 @@ Confidence: Medium (Auto-classified)
         content_lower = content.lower()
         
         # Critical indicators
-        critical_keywords = ['zero-day', 'critical vulnerability', 'active exploitation', 'worm', 'nation-state']
-        if any(keyword in content_lower for keyword in critical_keywords):
+        if hasattr(Config, 'HIGH_SEVERITY_KEYWORDS'):
+            critical_keywords = Config.HIGH_SEVERITY_KEYWORDS
+        else:
+            critical_keywords = ['zero-day', 'critical vulnerability', 'active exploitation', 'worm', 'nation-state']
+        
+        if any(keyword.lower() in content_lower for keyword in critical_keywords):
             return "Critical"
         
         # High severity indicators  

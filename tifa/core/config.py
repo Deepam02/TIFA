@@ -129,14 +129,29 @@ class Config:
         "compromise", "breach", "attack", "hacker", "cybercriminal"
     ]
     
+    # --- High Severity Keywords for AI Analysis ---
+    HIGH_SEVERITY_KEYWORDS = [
+        "zero-day", "0day", "critical vulnerability", "active exploitation", 
+        "worm", "nation-state", "ransomware", "remote code execution", 
+        "privilege escalation", "data breach", "apt", "advanced persistent threat",
+        "supply chain attack", "critical", "emergency", "urgent", "immediate action",
+        "widespread", "mass exploitation", "botnet", "cryptojacking"
+    ]
+    
     # --- Multi-threading Configuration ---
     MAX_FEED_WORKERS = int(os.getenv("MAX_FEED_WORKERS", 5))
     
     # --- AI Processing Configuration ---
     AI_REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", 45))
-    AI_MAX_RETRIES = int(os.getenv("AI_MAX_RETRIES", 5))
+    AI_MAX_RETRIES = int(os.getenv("AI_MAX_RETRIES", 3))  # Reduced retries to save tokens
     AI_RETRY_DELAY = int(os.getenv("AI_RETRY_DELAY", 1))
-    MAX_CONCURRENT_AI_REQUESTS = int(os.getenv("MAX_CONCURRENT_AI_REQUESTS", 10))
+    MAX_CONCURRENT_AI_REQUESTS = int(os.getenv("MAX_CONCURRENT_AI_REQUESTS", 5))  # Reduced concurrent requests
+    
+    # --- Token Usage Optimization ---
+    MAX_SUMMARY_TOKENS = int(os.getenv("MAX_SUMMARY_TOKENS", 200))  # Limit summary generation tokens
+    MAX_SEVERITY_TOKENS = int(os.getenv("MAX_SEVERITY_TOKENS", 50))   # Limit severity analysis tokens
+    DAILY_TOKEN_LIMIT = int(os.getenv("DAILY_TOKEN_LIMIT", 40000))    # Conservative daily limit
+    MAX_INPUT_CONTENT_LENGTH = int(os.getenv("MAX_INPUT_CONTENT_LENGTH", 500))  # Limit input content
     
     # --- Rate Limiting ---
     RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", 60))
