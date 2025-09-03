@@ -107,7 +107,7 @@ class Config:
     DB_PATH = os.getenv("DATABASE_PATH", "threat_intel.db")
     
     # --- Advanced Application Settings ---
-    APP_TITLE = os.getenv("APP_TITLE", "🛡️ TIFA - Elite Threat Intelligence Aggregator")
+    APP_TITLE = os.getenv("APP_TITLE", "TIFA - Elite Threat Intelligence Aggregator")
     APP_DESCRIPTION = os.getenv("APP_DESCRIPTION", "AI-Powered Global Threat Intelligence Platform")
     APP_ICON = "🛡️"
     

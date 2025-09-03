@@ -20,7 +20,7 @@ st.set_page_config(
     menu_items={
         'Get Help': 'https://github.com/Deepam02/TIFA',
         'Report a bug': "https://github.com/Deepam02/TIFA/issues",
-        'About': "# 🛡️ TIFA - Elite Threat Intelligence Feed Aggregator\nAI-powered threat intelligence aggregation and analysis platform"
+        'About': "#  TIFA - Elite Threat Intelligence Feed Aggregator\nAI-powered threat intelligence aggregation and analysis platform"
     }
 )
 
